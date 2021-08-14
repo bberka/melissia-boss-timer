@@ -8,7 +8,7 @@ import threading
 from time import sleep
 import discord
 import asyncio
-#NOTE: I'm not familiar with pyhton syntax, code could seem slappy :)
+
 import os
 import random
 
@@ -62,8 +62,8 @@ wednesday_list = [
     Boss("Mudster", "07:00", 2),
     Boss("Karanda", "11:00", 2),
     Boss("Nouver", "13:00", 2),
-    Boss("Kzarka", "14:00", 2),
     Boss("Offin", "14:00", 2),
+    Boss("Kzarka", "15:00", 2),
     Boss("Bheg", "18:30", 2),
     Boss("DimTree", "18:30", 2),
     Boss("Karanda", "20:30", 2),
@@ -168,17 +168,17 @@ boss_list = [
 ]
 
 icon_list = {
-    "karanda": "https://bdocodex.com/items/ui_artwork/ic_04370.png",
-    "kzarka": "https://bdocodex.com/items/ui_artwork/ic_04082.png",
-    "nouver": "https://bdocodex.com/items/ui_artwork/ic_04920.png",
-    "kutum": "https://bdocodex.com/items/ui_artwork/ic_04389.png",
-    "garmoth": "https://bdocodex.com/items/ui_artwork/ic_05154.png",
-    "offin": "https://bdocodex.com/items/ui_artwork/ic_05054.png",
-    "vell": "https://bdocodex.com/images/icon_vell.png",
-    "bheg": "https://bdocodex.com/items/ui_artwork/ic_04104.png",
-    "dimtree": "https://bdocodex.com/items/ui_artwork/ic_04022.png",
-    "mudster": "https://bdocodex.com/items/ui_artwork/ic_04110.png",
-    "rednose": "https://bdocodex.com/items/ui_artwork/ic_04013.png",
+    "karanda": "https://imgur.com/OVOrFZR.png",
+    "kzarka": "https://imgur.com/95OFQTe.png",
+    "nouver": "https://imgur.com/Kt5EOxS.png",
+    "kutum": "https://imgur.com/Ip4i2oa.png",
+    "garmoth": "https://imgur.com/P9MjV5A.png",
+    "offin": "https://imgur.com/mAzQglC.png",
+    "vell": "https://imgur.com/TfeSrVn.png",
+    "bheg": "https://imgur.com/GI59dGr.png",
+    "dimtree": "https://imgur.com/5F9SMhe.png",
+    "mudster": "https://imgur.com/H3Wdmnf.png",
+    "rednose": "https://imgur.com/uyChweO.png",
 }
 color_list = {
     "karanda": 0xdedcd7,
@@ -328,8 +328,6 @@ def get_boss_list():
 
 
 def get_view(value):
-    UTC = pytz.utc
-    ctime = datetime.now(UTC).strftime("%Y-%m-%d %H:%M:%S")
     temp = value
     view_list = ""
     li = []
@@ -418,45 +416,47 @@ async def info_loop():
     x = discord.Embed(title="BOSS TIMES LIST | " + str(ctime) + " UTC +0", description=get_view(get_boss_list()), color=0xffffff)
     await info_channel.send(embed=x)
 
-
 @tasks.loop(minutes=1)
-async def notify_loop_v3():
-    _channel = bot.get_channel(ntf_ch_id())
-    temp5 = get_lessthen(5)
-    temp15 = get_lessthen(15)
-    temp30 = get_lessthen(30)
-    temp = []
-    if len(temp5) != 0: temp = temp5
-    elif len(temp15) != 0: temp = temp15
-    elif len(temp30) != 0: temp = temp30
+async def notify_loop_v4():
+  _channel = bot.get_channel(ntf_ch_id())
+  temp0 = get_lessthen(0)
+  temp5 = get_lessthen(5)
+  temp15 = get_lessthen(15)
+  temp = []
+  if len(temp0) != 0: temp = temp0
+  elif len(temp5) != 0: temp = temp5
+  elif len(temp15) != 0: temp = temp15
 
-    if len(temp) != 0:
-        if temp == temp5 or temp == temp15:
-            await _channel.purge(limit=len(temp))
-        for x in temp:
-            boss = x.split()[0]
-            left = x.split()[1]
-            bossurl = icon_list[boss.lower()]
-            embedVar = discord.Embed(title=boss.upper() + " will spawn in " + str(int(round_60(left) / 60)) + " mins", description="", color=color_list[boss.lower()])
-            embedVar.set_image(url=bossurl)
-            tag = "<@&" + str(get_boss_role_id(boss.lower())) + ">"
-            await _channel.send(tag, embed=embedVar)
-            print("notif sent")
-
-    else:
-        print("nothing yet")
+  if len(temp) != 0:
+    for x in temp:
+      if temp == temp5 or temp == temp0:
+        await _channel.purge(limit=len(temp))
+      boss = x.split()[0]
+      left = x.split()[1]
+      bossurl = icon_list[boss.lower()]
+      _color = color_list[boss.lower()]
+      _title = boss.upper() + " will spawn in " + str(int(round_60(left) / 60)) + " mins"
+      if temp == temp0: 
+        _title = boss.upper() + " spawned"
+      embedVar = discord.Embed(title=_title, description="", color=_color)
+      embedVar.set_image(url=bossurl)
+      tag = "<@&" + str(get_boss_role_id(boss.lower())) + ">"
+      await _channel.send(tag, embed=embedVar)
+      print("notif sent")
+  else:
+    print("nothing yet: " + str(datetime.now(UTC).strftime("%m-%d %H:%M")))
 
 
 @tasks.loop(seconds=1)
 async def timer_exact():
-    UTC = pytz.utc
-    sec = int(datetime.now(UTC).strftime("%S"))
-    if sec == 59:
-        print("Info Loop Started!")
-        info_loop.start()
-        print("Notif Loop Started!")
-        notify_loop_v3.start()
-        timer_exact.stop()
+  UTC = pytz.utc
+  sec = int(datetime.now(UTC).strftime("%S"))
+  if sec == 59:
+    print("Info Loop Started!")
+    info_loop.start()
+    print("Notif v4 Loop Started!")
+    notify_loop_v4.start()
+    timer_exact.stop()
 
 
 @tasks.loop(minutes=10)
@@ -531,7 +531,7 @@ async def on_message(ctx):
             else:
                 await ctx.channel.send(ctx.author.mention +' please enter a valid boss name.', delete_after=10.0)
 
-
+        
         elif msg == prefix + 'help':
             x = discord.Embed(title="Here is some commands you can use;", color=0xffffff)
             x.add_field(
