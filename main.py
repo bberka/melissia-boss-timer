@@ -205,84 +205,93 @@ cur_day = utc.weekday()
 cur_day_sec = (cur_day * day_sec)
 cur_seconds = (utc.hour * 3600) + (utc.minute * 60) + utc.second + cur_day_sec
 
-
+#returns the time and day given as seconds 
+#day number multiplied with day_sec and it converts current time to seconds and returns it
 def get_time_as_sec(day, _time):
-    # 0 -> Monday | ... |6 -> Sunday
-    h = int(_time.split(":")[0])
-    m = int(_time.split(":")[1])
-    result = (h * 3600) + (m * 60) + (day * day_sec)
-    return result
+  # 0 -> Monday | ... |6 -> Sunday
+  h = int(_time.split(":")[0])
+  m = int(_time.split(":")[1])
+  result = (h * 3600) + (m * 60) + (day * day_sec)
+  return result
 
-
+#rounds the number given to 60 if it is higher than 30 cuz round function it self is only rounds to 1,10,100 
 def round_60(value):
-    a = (int(value) % 60)
-    b = int(value) - a
-    if a <= 30: a = 0
-    elif a > 30: a = 60
-    return b + a
+  a = (int(value) % 60)
+  b = int(value) - a
+  if a <= 30: a = 0
+  elif a > 30: a = 60
+  return b + a
 
-
+#converts the given boss and value left to spawn as seconds to view value as bot posts it to boss-info channel
 def convert(boss, value):
-    rounded = int(round_60(value))
-    if rounded <= 0: return False
-    elif rounded < 60 and rounded > 0 or rounded / 60 == 0:
-        return boss.upper() + " in " + str(rounded) + " sec"
-    elif rounded < 3600 and rounded > 60:
-        return boss.upper() + " in " + str(int(rounded / 60)) + " mins"
-    elif rounded > 3600:
-        return boss.upper() + " in " + str(int(
-            rounded / 3600)) + " hours and " + str(int(
-                (rounded % 3600) / 60)) + " mins"
+  rounded = int(round_60(value))
+  if rounded <= 0: return False
+  elif rounded < 60 and rounded > 0 or rounded / 60 == 0:
+      return boss.upper() + " in " + str(rounded) + " sec"
+  elif rounded < 3600 and rounded > 60:
+      return boss.upper() + " in " + str(int(rounded / 60)) + " mins"
+  elif rounded > 3600:
+    if rounded < 7200: 
+      return boss.upper() + " in " + str(int(rounded / 3600)) + " hour and " + str(int((rounded % 3600) / 60)) + " mins"
+    return boss.upper() + " in " + str(int(rounded / 3600)) + " hours and " + str(int((rounded % 3600) / 60)) + " mins"
 
-
+#returns the icon link for the given boss name 
 def get_icon_link(boss):
-    for x in icon_list:
-        if x.split()[0] == boss.lower():
-            return x.split()[1]
+  for x in icon_list:
+      if x.split()[0] == boss.lower():
+          return x.split()[1]
 
-
+#returns the view text to bot for !calendar command it will change the times as given timezone value
 def get_all_list(val):
-    value = int(val)
-    array_list.clear()
-    view_list = ""
-    view_list = ">>> **ALL BOSS TIMES LIST (GMT +" + str(value) + ")**\n"
-    i = 0
-    y = 0
-    temp_list = []
+  value = int(val)
+  array_list.clear()
+  view_list = ""
+  view_list = ">>> **ALL BOSS TIMES LIST (GMT " + str(value) + ")**\n"
+  i = 0
+  y = 0
+  temp_list = []
 
-    while y < 7:
-        if y == 0:
-            view_list += "\n**Monday**```css\n"
-            temp_list = monday_list.copy()
-        elif y == 1:
-            view_list += "```\n**Tuesday**```css\n"
-            temp_list = tuesday_list.copy()
-        elif y == 2:
-            view_list += "```\n**Wednesday**```css\n"
-            temp_list = wednesday_list.copy()
-        elif y == 3:
-            view_list += "```\n**Thursday**```css\n"
-            temp_list = thursday_list.copy()
-        elif y == 4:
-            view_list += "```\n**Friday**```css\n"
-            temp_list = friday_list.copy()
-        elif y == 5:
-            view_list += "```\n**Saturday**```css\n"
-            temp_list = saturday_list.copy()
-        elif y == 6:
-            view_list += "```\n**Sunday**```css\n"
-            temp_list = sunday_list.copy()
-        for x in temp_list:
-            h = int(x._time.split(":")[0])
-            m = x._time.split(":")[1]
-            gmt = str(h + value) + ":" + m
+  while y < 7:
+      if y == 0:
+          view_list += "\n**Monday**```css\n"
+          temp_list = monday_list.copy()
+      elif y == 1:
+          view_list += "```\n**Tuesday**```css\n"
+          temp_list = tuesday_list.copy()
+      elif y == 2:
+          view_list += "```\n**Wednesday**```css\n"
+          temp_list = wednesday_list.copy()
+      elif y == 3:
+          view_list += "```\n**Thursday**```css\n"
+          temp_list = thursday_list.copy()
+      elif y == 4:
+          view_list += "```\n**Friday**```css\n"
+          temp_list = friday_list.copy()
+      elif y == 5:
+          view_list += "```\n**Saturday**```css\n"
+          temp_list = saturday_list.copy()
+      elif y == 6:
+          view_list += "```\n**Sunday**```css\n"
+          temp_list = sunday_list.copy()
+      for x in temp_list:
+          h = int(x._time.split(":")[0])
+          m = x._time.split(":")[1]
+          added_tz = h + value
+          if added_tz >= 24: 
+            gmt = str(added_tz - 24) + ":" + m
+            array_list.append(x.boss + " at " + gmt + " (next day)")
+          elif added_tz < 0:
+            gmt = str(added_tz + 24) + ":" + m
+            array_list.append(x.boss + " at " + gmt + " (previous day)")
+          else: 
+            gmt = str(added_tz) + ":" + m
             array_list.append(x.boss + " at " + gmt)
-            view_list += array_list[i] + "\n"
-            i += 1
-        y += 1
-    return view_list + "```"
+          view_list += array_list[i] + "\n"
+          i += 1
+      y += 1
+  return view_list + "```"
 
-
+#returns todays bosses that hasnt been spawned and next days bosses
 def get_boss_list():
     day_sec = 86400
     UTC = pytz.utc
@@ -317,6 +326,7 @@ def get_boss_list():
     for x in temp_list:
         sec = get_time_as_sec(cur_day, x._time)
         left = sec - cur_seconds
+        if left < 0: continue
         array_list.append(x.boss + " " + str(left) + " " + str(x.day))
 
     for x in temp_list2:
@@ -326,7 +336,7 @@ def get_boss_list():
 
     return array_list
 
-
+#converts get_boss_list arraylist to discord text
 def get_view(value):
     temp = value
     view_list = ""
@@ -335,17 +345,16 @@ def get_view(value):
         boss = x.split()[0]
         left = int(float(x.split()[1]))
         y = convert(boss, left)
-        if y is not False:
-            li.append(y)
-    for x in li:
-        view_list += str(x) + "\n"
+        if y is not False: li.append(y)
+    
+    for x in li: view_list += str(x) + "\n"
 
     view_list = "```css\n" + view_list + "```"
     return view_list
 
-
+#used at notify loop check it will check if theres boss before the given time as minute
 def get_lessthen(value):  #value must be minute
-    li = []
+    
     li = get_boss_list()
     temp = []
     for x in li:
@@ -354,8 +363,9 @@ def get_lessthen(value):  #value must be minute
         elif left > (value * 60) + 15 or left < (value * 60) - 15: continue
         temp.append(x)
     return temp
+    
 
-
+#returns the id of channel named boss-notifications
 def ntf_ch_id():
     for server in bot.guilds:
         for channel in server.channels:
@@ -363,7 +373,7 @@ def ntf_ch_id():
                 if channel.name == "boss-notifications":
                     return channel.id
 
-
+#returns the id of channel named boss-info
 def info_ch_id():
     for server in bot.guilds:
         for channel in server.channels:
@@ -371,7 +381,7 @@ def info_ch_id():
                 if channel.name == "boss-info":
                     return channel.id
 
-
+#returns the given boss name role id in order to tag
 def get_boss_role_id(bossname):
     if bossname.lower() in boss_list:
         for server in bot.guilds:
@@ -380,7 +390,7 @@ def get_boss_role_id(bossname):
                     return role.id
     return False
 
-
+#returns the list of all spawn times for given boss name
 def get_one_boss_list(boss):
     all_list = monday_list + tuesday_list + wednesday_list + thursday_list + friday_list + saturday_list + sunday_list
     day_sec = 86400
@@ -406,19 +416,21 @@ def get_one_boss_list(boss):
         temp.append(x)
     return temp
 
-
+#boss-info channel loop refreshes every min
 @tasks.loop(minutes=1)
 async def info_loop():
     timer_exact.cancel()
     info_channel = bot.get_channel(info_ch_id())
     await info_channel.purge(limit=2)
     ctime = datetime.now(UTC).strftime("%Y-%m-%d %H:%M:%S")
-    x = discord.Embed(title="BOSS TIMES LIST | " + str(ctime) + " UTC +0", description=get_view(get_boss_list()), color=0xffffff)
+    x = discord.Embed(title="BOSS TIMES LIST | " + str(ctime) + " UTC", description=get_view(get_boss_list()), color=0xffffff)
     await info_channel.send(embed=x)
 
+#boss-notifications loop checks every min
 @tasks.loop(minutes=1)
 async def notify_loop_v4():
   _channel = bot.get_channel(ntf_ch_id())
+
   temp0 = get_lessthen(0)
   temp5 = get_lessthen(5)
   temp15 = get_lessthen(15)
@@ -431,13 +443,14 @@ async def notify_loop_v4():
     for x in temp:
       if temp == temp5 or temp == temp0:
         await _channel.purge(limit=len(temp))
+
       boss = x.split()[0]
       left = x.split()[1]
       bossurl = icon_list[boss.lower()]
       _color = color_list[boss.lower()]
       _title = boss.upper() + " will spawn in " + str(int(round_60(left) / 60)) + " mins"
-      if temp == temp0: 
-        _title = boss.upper() + " spawned"
+      if temp == temp0:  _title = boss.upper() + " spawned"
+
       embedVar = discord.Embed(title=_title, description="", color=_color)
       embedVar.set_image(url=bossurl)
       tag = "<@&" + str(get_boss_role_id(boss.lower())) + ">"
@@ -446,19 +459,19 @@ async def notify_loop_v4():
   else:
     print("nothing yet: " + str(datetime.now(UTC).strftime("%m-%d %H:%M")))
 
-
+#starts info and notify loop at exact 00 seconds
 @tasks.loop(seconds=1)
 async def timer_exact():
   UTC = pytz.utc
   sec = int(datetime.now(UTC).strftime("%S"))
-  if sec == 59:
+  if sec == 00:
     print("Info Loop Started!")
     info_loop.start()
     print("Notif v4 Loop Started!")
     notify_loop_v4.start()
     timer_exact.stop()
 
-
+#changes boss status every 10 mins
 @tasks.loop(minutes=10)
 async def change_status():
     game = discord.Game("with " + random.choice(status_list))
@@ -473,7 +486,7 @@ async def on_ready():
     info_channel = bot.get_channel(info_ch_id())
     await info_channel.purge(limit=2)
     ctime = datetime.now(UTC).strftime("%Y-%m-%d %H:%M:%S")
-    x = discord.Embed(title="BOSS TIMES LIST | " + str(ctime) + " UTC +0",  description=get_view(get_boss_list()),color=0xffffff)
+    x = discord.Embed(title="BOSS TIMES LIST | " + str(ctime) + " UTC",  description=get_view(get_boss_list()),color=0xffffff)
     await info_channel.send(embed=x)
     db["msg_ntf"] = 0
     timer_exact.start()
@@ -521,7 +534,7 @@ async def on_message(ctx):
             boss = str(msg.lstrip("!boss")).strip().lower()
             if boss in boss_list:
                 ctime = datetime.now(UTC).strftime("%Y-%m-%d %H:%M:%S")
-                x = discord.Embed(title=boss.upper() + " BOSS TIMES LIST | " +  str(ctime) + " UTC +0",  description=get_view( get_one_boss_list(boss)),   color=0xffffff)
+                x = discord.Embed(title=boss.upper() + " BOSS TIMES LIST | " +  str(ctime) + " UTC",  description=get_view( get_one_boss_list(boss)),   color=0xffffff)
                 await ctx.author.create_dm()
                 await ctx.author.dm_channel.send(embed=x)
                 if check:
@@ -551,7 +564,7 @@ async def on_message(ctx):
                 inline=False)
             x.set_footer(
                 text=
-                "This bot is running on development server so bot reactions could be slow"
+                "This bot is running on development server so bot reactions may be slow"
             )
             await ctx.channel.send(embed=x)
 
