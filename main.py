@@ -1,26 +1,18 @@
 from keep_alive import keep_alive
 from datetime import datetime
 import pytz
-import time
-import sched
-from replit import db
-import threading
-from time import sleep
 import discord
-import asyncio
-
 import os
 import random
-
 from discord.ext import commands
 from discord.ext import tasks
 from dotenv import load_dotenv
 
 load_dotenv()
-TOKEN = os.getenv('DISCORD_TOKEN')
 
-bot = commands.Bot(command_prefix='!', help_command=None)
-
+intents = discord.Intents.default()
+intents.members = True
+bot = commands.Bot(command_prefix='!', help_command=None, intents=intents)
 client = discord.Client()
 prefix = '!'
 
@@ -31,7 +23,9 @@ class Boss:
         self._time = _time
         self.day = day
 
-
+##########################################################
+################# VARIABLES ##############################
+##########################################################
 monday_list = [
     Boss("RedNose", "07:00", 0),
     Boss("Mudster", "07:00", 0),
@@ -205,6 +199,10 @@ cur_day = utc.weekday()
 cur_day_sec = (cur_day * day_sec)
 cur_seconds = (utc.hour * 3600) + (utc.minute * 60) + utc.second + cur_day_sec
 
+##########################################################
+################# BOT FUNCTIONS ##########################
+##########################################################
+
 #returns the time and day given as seconds 
 #day number multiplied with day_sec and it converts current time to seconds and returns it
 def get_time_as_sec(day, _time):
@@ -246,7 +244,8 @@ def get_all_list(val):
   value = int(val)
   array_list.clear()
   view_list = ""
-  view_list = ">>> **ALL BOSS TIMES LIST (GMT " + str(value) + ")**\n"
+  if val < 0: view_list = ">>> **ALL BOSS TIMES LIST (GMT " + str(value) + ")**\n"
+  elif val > 0: view_list = ">>> **ALL BOSS TIMES LIST (GMT +" + str(value) + ")**\n"
   i = 0
   y = 0
   temp_list = []
@@ -416,6 +415,10 @@ def get_one_boss_list(boss):
         temp.append(x)
     return temp
 
+##########################################################
+################# BOT LOOPS ##############################
+##########################################################
+
 #boss-info channel loop refreshes every min
 @tasks.loop(minutes=1)
 async def info_loop():
@@ -477,101 +480,131 @@ async def change_status():
     game = discord.Game("with " + random.choice(status_list))
     await bot.change_presence(status=discord.Status.online, activity=game)
 
-
+##########################################################
+################# BOT EVENTS #############################
+##########################################################
 @bot.event
 async def on_ready():
     print('Logged in as {0.user}'.format(bot))
-    game = discord.Game("with Kzarka")
-    await bot.change_presence(status=discord.Status.online, activity=game)
-    info_channel = bot.get_channel(info_ch_id())
+
+    info_channel = bot.get_channel(info_ch_id())    
     await info_channel.purge(limit=2)
     ctime = datetime.now(UTC).strftime("%Y-%m-%d %H:%M:%S")
     x = discord.Embed(title="BOSS TIMES LIST | " + str(ctime) + " UTC",  description=get_view(get_boss_list()),color=0xffffff)
     await info_channel.send(embed=x)
-    db["msg_ntf"] = 0
+
     timer_exact.start()
     change_status.start()
 
+@bot.event #doesnt work
+async def on_member_join(member):
+  print('**Welcome to Melissia Boss Timer discord server!**\nIn order to get notified you have to go to #851464537479315557 channel and react to the roles with the name of bosses you want to get notified. Enjoy not missing any boss!\nUse !help command in server to get more information.\nThis is not made by Melissia Games developers.')
 
-@bot.event
-async def on_message(ctx):
-    msg = ctx.content.casefold()
-    if ctx.author == client.user:
-        return
+
+##########################################################
+################# BOT COMMANDS ###########################
+##########################################################
+
+@bot.command(name="help",pass_context=True)
+async def help(ctx):
+  try: await ctx.message.delete()
+  except: None
+  x = discord.Embed(title="Here is some commands you can use;", color=0xffffff)
+  x.add_field(
+      name="!calendar *TIMEZONE*",
+      value=
+      "I will DM you with all boss spawn times. Enter timezone as number value.",
+      inline=False
+      )
+  x.add_field(
+      name="!boss",
+      value=
+      "I will DM you with bosses remaining time to spawn also you can find that information in here <#850077285356535839>",
+      inline=False
+      )
+  x.add_field(
+      name="!boss *ANYBOSSNAME*",
+      value=
+      "I will DM you with the boss list that you wrote and their remaining time to spawn.",
+      inline=False
+      )
+  x.add_field(
+    name="!invite",
+    value="I will give you permanent invite link of this server"
+  )
+  x.set_footer(
+      text=
+      "This bot is running on development server so bot reactions may be slow"
+  )  
+  await ctx.channel.send(embed=x)
+
+
+@bot.command(name="invite",pass_context=True)
+async def invite(ctx):
+  try: await ctx.message.delete()
+  except: None
+  await ctx.channel.send("https://discord.gg/9CYzgrEpyj")
+
+
+@bot.command(name="boss",pass_context=True)
+async def boss(ctx):
+  bossname = str(ctx.message.content.lstrip("!boss").strip().lower())
+  ctime = datetime.now(UTC).strftime("%Y-%m-%d %H:%M:%S")
+  try: await ctx.message.delete()
+  except: None
+  if bossname == "":
+    x = discord.Embed(title="BOSS TIMES LIST | " + str(ctime) + " UTC",   description=get_view(get_boss_list()),color=0xffffff)
+  elif bossname in boss_list:          
+    x = discord.Embed(title=bossname.upper() + " BOSS TIMES LIST | " +  str(ctime) + " UTC",  description=get_view( get_one_boss_list(bossname)), color=0xffffff)
+  else: 
+    await ctx.channel.send(ctx.author.mention + ' please enter correct boss name.',delete_after=10.0)
+    return
+
+  await ctx.author.create_dm()
+  await ctx.author.dm_channel.send(embed=x)
+
+  if str(ctx.channel.type) != 'private':     
+    await ctx.channel.send(ctx.author.mention + ' check your DM\'s!',delete_after=10.0)
+
+@bot.command(name="calendar",pass_context=True)
+async def calendar(ctx):
+  gmt = str(ctx.message.content.lstrip("!calendar"))
+  dm_check = str(ctx.channel.type) != 'private'
+  if dm_check: 
+    await ctx.message.delete()
+  if gmt != "": 
+    try: gmt = int(gmt)
+    except: 
+      await ctx.channel.send(ctx.author.mention + " please enter a valid number", delete_after=10.0)
+      return
+    if gmt < -12 or gmt > 13:    
+      await ctx.channel.send(ctx.author.mention + " please enter a valid number", delete_after=10.0)
+      return
+  else: gmt = 0
+
+  await ctx.author.create_dm()
+  await ctx.author.dm_channel.send(get_all_list(gmt))
   
-    else:
-        if msg == prefix + 'boss':
-            ctime = datetime.now(UTC).strftime("%Y-%m-%d %H:%M:%S")
-            x = discord.Embed(title="BOSS TIMES LIST | " + str(ctime) + " UTC +0",   description=get_view(get_boss_list()),color=0xffffff)
-            await ctx.author.create_dm()
-            await ctx.author.dm_channel.send(embed=x)
-            if str(ctx.channel.type) != 'private':
-                await ctx.delete()
-                await ctx.channel.send(ctx.author.mention + ' check your DM\'s!', delete_after=10.0)
+  if dm_check:      
+      await ctx.channel.send(ctx.author.mention + ' check your DM\'s!', delete_after=10.0)
 
-        elif msg.startswith(prefix + 'calendar'):
-            check = str(ctx.channel.type) != 'private'
-            gmt = str(msg.lstrip("!calendar"))
-            if gmt == "": gmt = 0
-            try:
-                gmt = int(gmt)
-            except:
-                if check: await ctx.delete()
-                await ctx.channel.send(ctx.author.mention + " please enter a valid number", delete_after=10.0)
-                return
-            if gmt < -12 or gmt > 13:
-                if check: await ctx.delete()
-                await ctx.channel.send(ctx.author.mention + " please enter a valid number", delete_after=10.0)
-                return
-            await ctx.author.create_dm()
-            await ctx.author.dm_channel.send(get_all_list(gmt))
-            if check:
-                await ctx.delete()
-                await ctx.channel.send(ctx.author.mention + ' check your DM\'s!', delete_after=10.0)
+@bot.command(name="shutdown",pass_context=True)
+async def shutdown(ctx):
+  try: 
+    await ctx.message.delete()
+  except: None
+  if ctx.author.id == 174213672535588864 or ctx.author.id == 654780853414789153:
+    await bot.close()
+    print("Bot logged out")
+  else: await ctx.channel.send("You don't have permission to do this.",delete_after=10.0 )
 
-        elif msg.startswith(prefix + 'boss'):
-            check = str(ctx.channel.type) != 'private'
-            boss = str(msg.lstrip("!boss")).strip().lower()
-            if boss in boss_list:
-                ctime = datetime.now(UTC).strftime("%Y-%m-%d %H:%M:%S")
-                x = discord.Embed(title=boss.upper() + " BOSS TIMES LIST | " +  str(ctime) + " UTC",  description=get_view( get_one_boss_list(boss)),   color=0xffffff)
-                await ctx.author.create_dm()
-                await ctx.author.dm_channel.send(embed=x)
-                if check:
-                    await ctx.delete()
-                    await ctx.channel.send(ctx.author.mention +  ' check your DM\'s!', delete_after=10.0)
-
-            else:
-                await ctx.channel.send(ctx.author.mention +' please enter a valid boss name.', delete_after=10.0)
-
-        
-        elif msg == prefix + 'help':
-            x = discord.Embed(title="Here is some commands you can use;", color=0xffffff)
-            x.add_field(
-                name="!calendar *TIMEZONE*",
-                value=
-                "I will DM you with all boss spawn times. Enter timezone as number value.",
-                inline=False)
-            x.add_field(
-                name="!boss",
-                value=
-                "I will DM you with bosses remaining time to spawn also you can find that information in here <#850077285356535839>",
-                inline=False)
-            x.add_field(
-                name="!boss *ANYBOSSNAME*",
-                value=
-                "I will DM you with the boss list that you wrote and their remaining time to spawn.",
-                inline=False)
-            x.set_footer(
-                text=
-                "This bot is running on development server so bot reactions may be slow"
-            )
-            await ctx.channel.send(embed=x)
-
-        elif msg == prefix + "shutdown" and ctx.author.id == 174213672535588864:
-            await client.close()
-            print("Bot logged out")
+@bot.command(name="test",pass_context=True)
+async def test(ctx):
+  if ctx.author.id == 654780853414789153:
+    await ctx.channel.send(str(ctx.message.content))
 
 
+
+#BOT RUN
 keep_alive()
 bot.run(os.getenv("TOKEN"))
