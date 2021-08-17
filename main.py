@@ -498,7 +498,7 @@ async def on_ready():
 
 @bot.event #doesnt work
 async def on_member_join(member):
-  print('**Welcome to Melissia Boss Timer discord server!**\nIn order to get notified you have to go to #851464537479315557 channel and react to the roles with the name of bosses you want to get notified. Enjoy not missing any boss!\nUse !help command in server to get more information.\nThis is not made by Melissia Games developers.')
+  await member.send('**Welcome to Melissia Boss Timer discord server!**\nIn order to get notified you have to go to <#851464537479315557> channel and react to the roles with the name of bosses you want to get notified. Enjoy not missing any boss!\nUse !help command in server to get more information.\n\nThis is not made by Melissia Games developers.')
 
 
 ##########################################################
