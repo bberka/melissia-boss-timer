@@ -233,11 +233,6 @@ def convert(boss, value):
       return boss.upper() + " in " + str(int(rounded / 3600)) + " hour and " + str(int((rounded % 3600) / 60)) + " mins"
     return boss.upper() + " in " + str(int(rounded / 3600)) + " hours and " + str(int((rounded % 3600) / 60)) + " mins"
 
-#returns the icon link for the given boss name 
-def get_icon_link(boss):
-  for x in icon_list:
-      if x.split()[0] == boss.lower():
-          return x.split()[1]
 
 #returns the view text to bot for !calendar command it will change the times as given timezone value
 def get_all_list(val):
@@ -325,7 +320,7 @@ def get_boss_list():
     for x in temp_list:
         sec = get_time_as_sec(cur_day, x._time)
         left = sec - cur_seconds
-        if left < 0: continue
+        if left < -15: continue
         array_list.append(x.boss + " " + str(left) + " " + str(x.day))
 
     for x in temp_list2:
@@ -362,30 +357,26 @@ def get_lessthen(value):  #value must be minute
         elif left > (value * 60) + 15 or left < (value * 60) - 15: continue
         temp.append(x)
     return temp
-    
 
-#returns the id of channel named boss-notifications
-def ntf_ch_id():
-    for server in bot.guilds:
-        for channel in server.channels:
-            if str(channel.type) == 'text':
-                if channel.name == "boss-notifications":
-                    return channel.id
-
-#returns the id of channel named boss-info
-def info_ch_id():
-    for server in bot.guilds:
-        for channel in server.channels:
-            if str(channel.type) == 'text':
-                if channel.name == "boss-info":
-                    return channel.id
+#returns the icon link for the given boss name 
+def get_icon_link(boss):
+  for x in icon_list:
+      if x.split()[0] == boss.lower():
+          return x.split()[1]
+   
+def get_text_ch_id(name):
+  for server in bot.guilds:
+    for channel in server.channels:
+        if str(channel.type) == 'text':
+            if channel.name.lower() == name.lower():
+              return channel.id
 
 #returns the given boss name role id in order to tag
-def get_boss_role_id(bossname):
-    if bossname.lower() in boss_list:
+def get_role_id(rolename,c):
+    if c == 1 or rolename.lower() in boss_list :
         for server in bot.guilds:
             for role in server.roles:
-                if role.name.lower() == bossname.lower():
+                if role.name.lower() == rolename.lower():
                     return role.id
     return False
 
@@ -423,7 +414,7 @@ def get_one_boss_list(boss):
 @tasks.loop(minutes=1)
 async def info_loop():
     timer_exact.cancel()
-    info_channel = bot.get_channel(info_ch_id())
+    info_channel = bot.get_channel(get_text_ch_id("boss-info"))
     await info_channel.purge(limit=2)
     ctime = datetime.now(UTC).strftime("%Y-%m-%d %H:%M:%S")
     x = discord.Embed(title="BOSS TIMES LIST | " + str(ctime) + " UTC", description=get_view(get_boss_list()), color=0xffffff)
@@ -432,7 +423,7 @@ async def info_loop():
 #boss-notifications loop checks every min
 @tasks.loop(minutes=1)
 async def notify_loop_v4():
-  _channel = bot.get_channel(ntf_ch_id())
+  _channel = bot.get_channel(get_text_ch_id("boss-notifications"))
 
   temp0 = get_lessthen(0)
   temp5 = get_lessthen(5)
@@ -456,7 +447,7 @@ async def notify_loop_v4():
 
       embedVar = discord.Embed(title=_title, description="", color=_color)
       embedVar.set_image(url=bossurl)
-      tag = "<@&" + str(get_boss_role_id(boss.lower())) + ">"
+      tag = "<@&" + str(get_role_id(boss.lower(),0)) + ">"
       await _channel.send(tag, embed=embedVar)
       print("notif sent")
   else:
@@ -487,7 +478,7 @@ async def change_status():
 async def on_ready():
     print('Logged in as {0.user}'.format(bot))
 
-    info_channel = bot.get_channel(info_ch_id())    
+    info_channel = bot.get_channel(get_text_ch_id("boss-info"))    
     await info_channel.purge(limit=2)
     ctime = datetime.now(UTC).strftime("%Y-%m-%d %H:%M:%S")
     x = discord.Embed(title="BOSS TIMES LIST | " + str(ctime) + " UTC",  description=get_view(get_boss_list()),color=0xffffff)
@@ -496,9 +487,11 @@ async def on_ready():
     timer_exact.start()
     change_status.start()
 
-@bot.event #doesnt work
+@bot.event 
 async def on_member_join(member):
-  await member.send('**Welcome to Melissia Boss Timer discord server!**\nIn order to get notified you have to go to <#851464537479315557> channel and react to the roles with the name of bosses you want to get notified. Enjoy not missing any boss!\nUse !help command in server to get more information.\n\nThis is not made by Melissia Games developers.')
+  await member.send('**EN**\n**Welcome to Melissia Boss Timer discord server!**\nIn order to get notified you have to go to <#851464537479315557> channel and react to the roles with the name of bosses you want to get notified. Enjoy not missing any boss!\nUse !help command in server to get more information.\n\n*This is not made by Melissia Games developers.*\n\n**TR**\n**Melissia Boss Timer discord sunucusuna hoşgeldiniz!**\nBildirim almak için <#851464537479315557> kanalına gidip istediğiniz boss isimlerinin olduğu rollere tepki veriniz. Hiçbir bossu kaçırmamanın tadını çıkarın!\n!help komutunu kullanarak daha fazla bilgi edinebilirsiniz.\n\n*Bu bot Melissia Games geliştiricileri tarafından yapılmamıştır.*\n\n**RU**\n**Добро пожаловать на сервер разногласий Melissia Boss Timer! **\nЧтобы получить уведомление, вам нужно перейти на канал <#851464537479315557> и реагировать на роли, указав имена боссов, которых вы хотите получать. Наслаждайтесь, не пропуская ни одного босса! \n Используйте команду! help на сервере, чтобы получить дополнительную информацию.\n\n*Это сделано не разработчиками Melissia Games.*\n\n*Переведено с помощью Google Translate*')
+  role = discord.utils.get(member.guild.roles, id=get_role_id("member",1))
+  await member.add_roles(role)
 
 
 ##########################################################
@@ -600,8 +593,7 @@ async def shutdown(ctx):
 
 @bot.command(name="test",pass_context=True)
 async def test(ctx):
-  if ctx.author.id == 654780853414789153:
-    await ctx.channel.send(str(ctx.message.content))
+  print("x")
 
 
 
