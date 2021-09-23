@@ -64,9 +64,9 @@ async def notify_loop_v4():
   elif len(temp15) != 0: temp = temp15
 
   if len(temp) != 0:
+    if temp == temp0 or temp==temp5:
+     await _channel.purge(limit=len(temp))
     for x in temp:
-      if temp == temp5 or temp == temp0:
-        await _channel.purge(limit=len(temp))
 
       boss = x.split()[0]
       left = x.split()[1]
