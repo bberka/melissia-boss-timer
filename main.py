@@ -28,8 +28,8 @@ def get_text_ch_id(name):
               return channel.id
 
 #returns the given boss name role id in order to tag
-def get_role_id(rolename,c):
-    if c == 1 or rolename.lower() in fnc.boss_list :
+def get_role_id(rolename):
+    if rolename.lower() in fnc.boss_list :
         for server in bot.guilds:
             for role in server.roles:
                 if role.name.lower() == rolename.lower():
@@ -77,7 +77,7 @@ async def notify_loop_v4():
 
       embedVar = discord.Embed(title=_title, description="", color=_color)
       embedVar.set_image(url=bossurl)
-      tag = "<@&" + str(get_role_id(boss.lower(),0)) + ">"
+      tag = "<@&" + str(get_role_id(boss.lower())) + ">"
       await _channel.send(tag, embed=embedVar)
       print("notif sent")
   else:
@@ -120,7 +120,7 @@ async def on_ready():
 @bot.event 
 async def on_member_join(member):
   await member.send('**EN**\n**Welcome to Melissia Boss Timer discord server!**\nIn order to get notified you have to go to <#851464537479315557> channel and react to the roles with the name of bosses you want to get notified. Enjoy not missing any boss!\nUse !help command in server to get more information.\n\n*This is not made by Melissia Games developers.*\n\n**TR**\n**Melissia Boss Timer discord sunucusuna hoşgeldiniz!**\nBildirim almak için <#851464537479315557> kanalına gidip istediğiniz boss isimlerinin olduğu rollere tepki veriniz. Hiçbir bossu kaçırmamanın tadını çıkarın!\n!help komutunu kullanarak daha fazla bilgi edinebilirsiniz.\n\n*Bu bot Melissia Games geliştiricileri tarafından yapılmamıştır.*\n\n**RU**\n**Добро пожаловать на сервер разногласий Melissia Boss Timer! **\nЧтобы получить уведомление, вам нужно перейти на канал <#851464537479315557> и реагировать на роли, указав имена боссов, которых вы хотите получать. Наслаждайтесь, не пропуская ни одного босса! \n Используйте команду! help на сервере, чтобы получить дополнительную информацию.\n\n*Это сделано не разработчиками Melissia Games.*\n\n*Переведено с помощью Google Translate*')
-  role = discord.utils.get(member.guild.roles, id=get_role_id("member",1))
+  role = discord.utils.get(member.guild.roles, id=851464964279238666)
   await member.add_roles(role)
 
 

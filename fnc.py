@@ -199,7 +199,7 @@ def get_one_boss_list(boss):
         temp.append(x)
     return temp
 
-#rounds the number given to 60 if it is higher than 30 cuz round function it self is only rounds to 1,10,100 
+#rounds the number given to 60 if it is higher than 30
 def round_60(value):
   a = (int(value) % 60)
   b = int(value) - a
@@ -300,6 +300,8 @@ saturday_list = [
     Boss("Kzarka", "06:00", 5),
     Boss("Nouver", "07:00", 5),
     Boss("Kutum", "09:00", 5),
+    Boss("Muraka", "11:00", 5),
+    Boss("Quint", "11:00", 5),
     Boss("Karanda", "13:00", 5),
     Boss("Kutum", "15:00", 5),
     Boss("Garmoth", "16:00", 5),
@@ -351,6 +353,8 @@ status_list = [
     "Black Spirit",
     "Griffon",
     "Muskan",
+    "Muraka",
+    "Quint",
 ]
 boss_list = [
     "kzarka",
@@ -364,6 +368,8 @@ boss_list = [
     "nouver",
     "mudster",
     "bheg",
+    "quint",
+    "muraka",
 ]
 
 icon_list = {
@@ -378,6 +384,8 @@ icon_list = {
     "dimtree": "https://imgur.com/5F9SMhe.png",
     "mudster": "https://imgur.com/H3Wdmnf.png",
     "rednose": "https://imgur.com/uyChweO.png",
+    "muraka": "https://imgur.com/xRGrSeS.png",
+    "quint": "https://imgur.com/bDQpObP.png",
 }
 color_list = {
     "karanda": 0xdedcd7,
@@ -391,4 +399,6 @@ color_list = {
     "dimtree": 0x036910,
     "mudster": 0x727136,
     "rednose": 0x86040d,
+    "muraka": 0x0A43A3,
+    "quint": 473333,
 }
