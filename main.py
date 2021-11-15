@@ -20,7 +20,7 @@ prefix = '!'
 UTC = pytz.utc
 utc = datetime.now(UTC)
 
-def get_text_ch_id(name):
+def GetTextChIDbyName(name):
   for server in bot.guilds:
     for channel in server.channels:
         if str(channel.type) == 'text':
@@ -28,7 +28,7 @@ def get_text_ch_id(name):
               return channel.id
 
 #returns the given boss name role id in order to tag
-def get_role_id(rolename):
+def GetRoleIDbyName(rolename):
     if rolename.lower() in fnc.boss_list :
         for server in bot.guilds:
             for role in server.roles:
@@ -42,22 +42,20 @@ def get_role_id(rolename):
 
 #boss-info channel loop refreshes every min
 @tasks.loop(minutes=1)
-async def info_loop():
-    timer_exact.cancel()
-    info_channel = bot.get_channel(get_text_ch_id("boss-info"))
+async def BossInfoLoop():    
+    info_channel = bot.get_channel(GetTextChIDbyName("boss-info"))
     await info_channel.purge(limit=5)
     ctime = datetime.now(UTC).strftime("%Y-%m-%d %H:%M:%S")
-    x = discord.Embed(title="BOSS TIMES LIST | " + str(ctime) + " UTC", description=fnc.get_view(fnc.get_boss_list()), color=0xffffff)
+    x = discord.Embed(title="BOSS TIMES LIST | " + str(ctime) + " UTC", description=fnc.GetListView(fnc.GetBossInfoData()), color=0xffffff)
     await info_channel.send(embed=x)
 
 #boss-notifications loop checks every min
 @tasks.loop(minutes=1)
-async def notify_loop_v4():
-  _channel = bot.get_channel(get_text_ch_id("boss-notifications"))
-
-  temp0 = fnc.get_lessthen(0)
-  temp5 = fnc.get_lessthen(5)
-  temp15 = fnc.get_lessthen(15)
+async def BossNotifyCheckLoop():
+  _channel = bot.get_channel(GetTextChIDbyName("boss-notifications"))
+  temp0 = fnc.GetSpawnsLessThen(0)
+  temp5 = fnc.GetSpawnsLessThen(5)
+  temp15 = fnc.GetSpawnsLessThen(15)
   temp = []
   if len(temp0) != 0: temp = temp0
   elif len(temp5) != 0: temp = temp5
@@ -67,17 +65,15 @@ async def notify_loop_v4():
     if temp == temp0 or temp==temp5:
      await _channel.purge(limit=len(temp))
     for x in temp:
-
       boss = x.split()[0]
       left = x.split()[1]
       bossurl = fnc.icon_list[boss.lower()]
       _color = fnc.color_list[boss.lower()]
-      _title = boss.upper() + " will spawn in " + str(int(fnc.round_60(left) / 60)) + " mins"
+      _title = boss.upper() + " will spawn in " + str(int(fnc.RoundTo60(left) / 60)) + " mins"
       if temp == temp0:  _title = boss.upper() + " spawned"
-
       embedVar = discord.Embed(title=_title, description="", color=_color)
       embedVar.set_image(url=bossurl)
-      tag = "<@&" + str(get_role_id(boss.lower())) + ">"
+      tag = "<@&" + str(GetRoleIDbyName(boss.lower())) + ">"
       await _channel.send(tag, embed=embedVar)
       print("notif sent")
   else:
@@ -85,19 +81,19 @@ async def notify_loop_v4():
 
 #starts info and notify loop at exact 00 seconds
 @tasks.loop(seconds=1)
-async def timer_exact():
+async def BossTimerExact():
   UTC = pytz.utc
   sec = int(datetime.now(UTC).strftime("%S"))
   if sec == 00:
     print("Info Loop Started!")
-    info_loop.start()
+    BossInfoLoop.start()
     print("Notif v4 Loop Started!")
-    notify_loop_v4.start()
-    timer_exact.stop()
+    BossNotifyCheckLoop.start()
+    BossTimerExact.stop()
 
 #changes boss status every 10 mins
 @tasks.loop(minutes=10)
-async def change_status():
+async def ChangeStatus():
     game = discord.Game("with " + random.choice(fnc.status_list))
     await bot.change_presence(status=discord.Status.online, activity=game)
 
@@ -107,15 +103,14 @@ async def change_status():
 @bot.event
 async def on_ready():
     print('Logged in as {0.user}'.format(bot))
-
-    info_channel = bot.get_channel(get_text_ch_id("boss-info"))    
+    info_channel = bot.get_channel(GetTextChIDbyName("boss-info"))    
     await info_channel.purge(limit=2)
     ctime = datetime.now(UTC).strftime("%Y-%m-%d %H:%M:%S")
-    x = discord.Embed(title="BOSS TIMES LIST | " + str(ctime) + " UTC",  description=fnc.get_view(fnc.get_boss_list()),color=0xffffff)
+    x = discord.Embed(title="BOSS TIMES LIST | " + str(ctime) + " UTC",  description=fnc.GetListView(fnc.GetBossInfoData()),color=0xffffff)
     await info_channel.send(embed=x)
-
-    timer_exact.start()
-    change_status.start()
+    BossTimerExact.start()
+    ChangeStatus.start()
+   
 
 @bot.event 
 async def on_member_join(member):
@@ -176,9 +171,9 @@ async def boss(ctx):
   try: await ctx.message.delete()
   except: None
   if bossname == "":
-    x = discord.Embed(title="BOSS TIMES LIST | " + str(ctime) + " UTC",   description=fnc.get_view(fnc.get_boss_list()),color=0xffffff)
+    x = discord.Embed(title="BOSS TIMES LIST | " + str(ctime) + " UTC",   description=fnc.GetListView(fnc.GetBossInfoData()),color=0xffffff)
   elif bossname in fnc.boss_list:          
-    x = discord.Embed(title=bossname.upper() + " BOSS TIMES LIST | " +  str(ctime) + " UTC",  description=fnc.get_view(fnc.get_one_boss_list(bossname)), color=0xffffff)
+    x = discord.Embed(title=bossname.upper() + " BOSS TIMES LIST | " +  str(ctime) + " UTC",  description=fnc.GetListView(fnc.GetBossListbyName(bossname)), color=0xffffff)
   else: 
     await ctx.channel.send(ctx.author.mention + ' please enter correct boss name.',delete_after=10.0)
     return
@@ -203,9 +198,10 @@ async def shutdown(ctx):
 
 @bot.command(name="refreshcalendar",pass_context=True)
 async def refreshcalendar(ctx):
-  cal_ch = bot.get_channel(get_text_ch_id("calendar"))    
-  await cal_ch.purge(limit=5)  
-  await cal_ch.send(embed=fnc.get_all_embed("BOSS CALENDAR (UTC)",0))
+  if ctx.author.id == 174213672535588864 or ctx.author.id == 654780853414789153:
+    cal_ch = bot.get_channel(GetTextChIDbyName("calendar"))    
+    await cal_ch.purge(limit=5)  
+    await cal_ch.send(embed=fnc.GetCalendarEmbed("BOSS CALENDAR (UTC)",0))
 
 
 @bot.command(name="calendar",pass_context=True)
@@ -230,7 +226,7 @@ async def calendar(ctx):
   
 
   await ctx.author.create_dm()
-  await ctx.author.dm_channel.send(embed=fnc.get_all_embed(_title,_timezone))
+  await ctx.author.dm_channel.send(embed=fnc.GetCalendarEmbed(_title,_timezone))
   
   if dm_check:      
     await ctx.channel.send(ctx.author.mention + ' check your DM\'s!', delete_after=10.0)
