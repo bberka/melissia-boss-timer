@@ -7,7 +7,7 @@ import random
 from discord.ext import commands
 from discord.ext import tasks
 from dotenv import load_dotenv
-import fnc
+import cmd,var
 
 load_dotenv()
 
@@ -29,12 +29,13 @@ def GetTextChIDbyName(name):
 
 #returns the given boss name role id in order to tag
 def GetRoleIDbyName(rolename):
-    if rolename.lower() in fnc.boss_list :
-        for server in bot.guilds:
-            for role in server.roles:
-                if role.name.lower() == rolename.lower():
-                    return role.id
-    return False
+  if rolename.lower() in var.boss_list :
+      for server in bot.guilds:
+          for role in server.roles:
+              if role.name.lower() == rolename.lower():
+                  return role.id
+  return False
+
 
 ##########################################################
 ################# BOT LOOPS ##############################
@@ -42,59 +43,68 @@ def GetRoleIDbyName(rolename):
 
 #boss-info channel loop refreshes every min
 @tasks.loop(minutes=1)
-async def BossInfoLoop():    
-    info_channel = bot.get_channel(GetTextChIDbyName("boss-info"))
-    await info_channel.purge(limit=5)
-    ctime = datetime.now(UTC).strftime("%Y-%m-%d %H:%M:%S")
-    x = discord.Embed(title="BOSS TIMES LIST | " + str(ctime) + " UTC", description=fnc.GetListView(fnc.GetBossInfoData()), color=0xffffff)
-    await info_channel.send(embed=x)
+async def BossInfoLoop():      
+  info_channel = bot.get_channel(GetTextChIDbyName("boss-info"))
+  await info_channel.purge(limit=5)
+  ctime = datetime.now(UTC).strftime("%Y-%m-%d %H:%M:%S")
+  x = discord.Embed(
+    title=f"BOSS TIMES LIST | {ctime} UTC", 
+    description=cmd.GetDiscordText(cmd.GetBossInfo(0)), 
+    color=0xffffff)
+  await info_channel.send(embed=x)
+
 
 #boss-notifications loop checks every min
 @tasks.loop(minutes=1)
-async def BossNotifyCheckLoop():
-  _channel = bot.get_channel(GetTextChIDbyName("boss-notifications"))
-  temp0 = fnc.GetSpawnsLessThen(0)
-  temp5 = fnc.GetSpawnsLessThen(5)
-  temp15 = fnc.GetSpawnsLessThen(15)
-  temp = []
-  if len(temp0) != 0: temp = temp0
-  elif len(temp5) != 0: temp = temp5
-  elif len(temp15) != 0: temp = temp15
+async def BossNotifyCheckLoop():  
+  channel = bot.get_channel(GetTextChIDbyName("boss-notifications"))
+  temp = cmd.GetSpawn()
+  
+  if not temp: 
+    print(f'No boss yet: {datetime.now(UTC).strftime("%m-%d %H:%M")}')
+    return 0        
+  
+  for x in temp:
+    boss = x.split()[0]
+    left = int(x.split()[1])
+    for y in var.boss_list:
+      if boss == y.name: 
+        bosicon = y.icon
+        color = y.color
 
-  if len(temp) != 0:
-    if temp == temp0 or temp==temp5:
-     await _channel.purge(limit=len(temp))
-    for x in temp:
-      boss = x.split()[0]
-      left = x.split()[1]
-      bossurl = fnc.icon_list[boss.lower()]
-      _color = fnc.color_list[boss.lower()]
-      _title = boss.upper() + " will spawn in " + str(int(fnc.RoundTo60(left) / 60)) + " mins"
-      if temp == temp0:  _title = boss.upper() + " spawned"
-      embedVar = discord.Embed(title=_title, description="", color=_color)
-      embedVar.set_image(url=bossurl)
-      tag = "<@&" + str(GetRoleIDbyName(boss.lower())) + ">"
-      await _channel.send(tag, embed=embedVar)
-      print("notif sent")
-  else:
-    print("nothing yet: " + str(datetime.now(UTC).strftime("%m-%d %H:%M")))
+    title =  f"{boss.upper()} will spawn in {int(cmd.RoundTo60(left) / 60)} mins"      
+    if -20 <  left < 360: 
+      await channel.purge(limit=len(temp))
+      if left < 20: title =  f"{boss.upper()} spawned"      
+    
+    embedVar = discord.Embed(
+      title=title, 
+      description="", 
+      color=color
+      ).set_image(url=bosicon)
+    tag = f"<@&{str(GetRoleIDbyName(boss.lower()))}>"
+
+    await channel.send(tag, embed=embedVar)    
+    print(f"Notification sent {boss} : {left}")
+  
+    
+    
 
 #starts info and notify loop at exact 00 seconds
 @tasks.loop(seconds=1)
-async def BossTimerExact():
-  UTC = pytz.utc
+async def BossTimerExact():  
   sec = int(datetime.now(UTC).strftime("%S"))
   if sec == 00:
     print("Info Loop Started!")
     BossInfoLoop.start()
-    print("Notif v4 Loop Started!")
+    print("Notify v4 Loop Started!")
     BossNotifyCheckLoop.start()
     BossTimerExact.stop()
 
 #changes boss status every 10 mins
 @tasks.loop(minutes=10)
 async def ChangeStatus():
-    game = discord.Game("with " + random.choice(fnc.status_list))
+    game = discord.Game(f"with {random.choice(var.status_list)}")
     await bot.change_presence(status=discord.Status.online, activity=game)
 
 ##########################################################
@@ -103,19 +113,16 @@ async def ChangeStatus():
 @bot.event
 async def on_ready():
     print('Logged in as {0.user}'.format(bot))
-    info_channel = bot.get_channel(GetTextChIDbyName("boss-info"))    
-    await info_channel.purge(limit=2)
-    ctime = datetime.now(UTC).strftime("%Y-%m-%d %H:%M:%S")
-    x = discord.Embed(title="BOSS TIMES LIST | " + str(ctime) + " UTC",  description=fnc.GetListView(fnc.GetBossInfoData()),color=0xffffff)
-    await info_channel.send(embed=x)
     BossTimerExact.start()
     ChangeStatus.start()
    
 
 @bot.event 
 async def on_member_join(member):
-  await member.send('**EN**\n**Welcome to Melissia Boss Timer discord server!**\nIn order to get notified you have to go to <#851464537479315557> channel and react to the roles with the name of bosses you want to get notified. Enjoy not missing any boss!\nUse !help command in server to get more information.\n\n*This is not made by Melissia Games developers.*\n\n**TR**\n**Melissia Boss Timer discord sunucusuna hoşgeldiniz!**\nBildirim almak için <#851464537479315557> kanalına gidip istediğiniz boss isimlerinin olduğu rollere tepki veriniz. Hiçbir bossu kaçırmamanın tadını çıkarın!\n!help komutunu kullanarak daha fazla bilgi edinebilirsiniz.\n\n*Bu bot Melissia Games geliştiricileri tarafından yapılmamıştır.*\n\n**RU**\n**Добро пожаловать на сервер разногласий Melissia Boss Timer! **\nЧтобы получить уведомление, вам нужно перейти на канал <#851464537479315557> и реагировать на роли, указав имена боссов, которых вы хотите получать. Наслаждайтесь, не пропуская ни одного босса! \n Используйте команду! help на сервере, чтобы получить дополнительную информацию.\n\n*Это сделано не разработчиками Melissia Games.*\n\n*Переведено с помощью Google Translate*')
-  role = discord.utils.get(member.guild.roles, id=851464964279238666)
+  await member.send(var.welcome_message)
+  role = discord.utils.get(
+    member.guild.roles, 
+    id=851464964279238666)
   await member.add_roles(role)
 
 
@@ -125,111 +132,96 @@ async def on_member_join(member):
 
 @bot.command(name="help",pass_context=True)
 async def help(ctx):
-  try: await ctx.message.delete()
-  except: None
+  if str(ctx.channel.type) != 'private': await ctx.message.delete()  
   x = discord.Embed(title="Here is some commands you can use;", color=0xffffff)
   x.add_field(
-      name="!calendar *TIMEZONE*",
-      value=
-      "I will DM you with all boss spawn times. Enter timezone as number value.",
-      inline=False
-      )
+    name="!calendar *TIMEZONE*",
+    value=
+    "I will DM you with all boss spawn times. Enter timezone as number value.",
+    inline=False
+    )
   x.add_field(
-      name="!boss",
-      value=
-      "I will DM you with bosses remaining time to spawn also you can find that information in here <#850077285356535839>",
-      inline=False
-      )
-  x.add_field(
-      name="!boss *ANYBOSSNAME*",
-      value=
-      "I will DM you with the boss list that you wrote and their remaining time to spawn.",
-      inline=False
-      )
+    name="!boss *ANYBOSSNAME*",
+    value=
+    "I will DM you with the boss list that you wrote and their remaining time to spawn.",
+    inline=False
+    )
   x.add_field(
     name="!invite",
     value="I will give you permanent invite link of this server"
   )
   x.set_footer(
-      text=
-      "This bot is running on development server so bot reactions may be slow"
+    text=
+    "This bot is running on development server so bot reactions may be slow"
   )  
   await ctx.channel.send(embed=x)
 
 
 @bot.command(name="invite",pass_context=True)
 async def invite(ctx):
-  try: await ctx.message.delete()
-  except: None
+  if str(ctx.channel.type) != 'private': await ctx.message.delete()  
   await ctx.channel.send("https://discord.gg/9CYzgrEpyj")
+
 
 
 @bot.command(name="boss",pass_context=True)
 async def boss(ctx):
   bossname = str(ctx.message.content.lstrip("!boss").strip().lower())
   ctime = datetime.now(UTC).strftime("%Y-%m-%d %H:%M:%S")
-  try: await ctx.message.delete()
-  except: None
-  if bossname == "":
-    x = discord.Embed(title="BOSS TIMES LIST | " + str(ctime) + " UTC",   description=fnc.GetListView(fnc.GetBossInfoData()),color=0xffffff)
-  elif bossname in fnc.boss_list:          
-    x = discord.Embed(title=bossname.upper() + " BOSS TIMES LIST | " +  str(ctime) + " UTC",  description=fnc.GetListView(fnc.GetBossListbyName(bossname)), color=0xffffff)
+  
+  if cmd.BossnameCheck(bossname):            
+    x = discord.Embed(
+      title= f"{bossname.upper()} BOSS TIMES LIST | {ctime} UTC",  
+      description=cmd.GetDiscordText(cmd.GetBossInfo(bossname)), 
+      color=0xffffff)
   else: 
-    await ctx.channel.send(ctx.author.mention + ' please enter correct boss name.',delete_after=10.0)
+    await ctx.channel.send(f'{ctx.author.mention} please enter correct boss name.',delete_after=10.0)
     return
 
   await ctx.author.create_dm()
   await ctx.author.dm_channel.send(embed=x)
 
-  if str(ctx.channel.type) != 'private':     
-    await ctx.channel.send(ctx.author.mention + ' check your DM\'s!',delete_after=10.0)
+  if str(ctx.channel.type) != 'private':  
+    await ctx.message.delete()     
+    await ctx.channel.send(f'{ctx.author.mention} check your DM\'s!',delete_after=10.0)
 
 
 
 @bot.command(name="shutdown",pass_context=True)
 async def shutdown(ctx):
-  try: 
-    await ctx.message.delete()
-  except: None
+  if str(ctx.channel.type) != 'private': await ctx.message.delete()   
   if ctx.author.id == 174213672535588864 or ctx.author.id == 654780853414789153:
     await bot.close()
     print("Bot logged out")
-  else: await ctx.channel.send("You don't have permission to do this.",delete_after=10.0 )
 
 @bot.command(name="refreshcalendar",pass_context=True)
 async def refreshcalendar(ctx):
   if ctx.author.id == 174213672535588864 or ctx.author.id == 654780853414789153:
     cal_ch = bot.get_channel(GetTextChIDbyName("calendar"))    
     await cal_ch.purge(limit=5)  
-    await cal_ch.send(embed=fnc.GetCalendarEmbed("BOSS CALENDAR (UTC)",0))
+    await cal_ch.send(embed=cmd.GetCalendarEmbed("BOSS CALENDAR (UTC)",0))
 
 
 @bot.command(name="calendar",pass_context=True)
 async def calendar(ctx):
-  _timezone = str(ctx.message.content.lstrip("!calendar"))
-  dm_check = str(ctx.channel.type) != 'private'
-  if dm_check: 
-    await ctx.message.delete()
-  if _timezone != "": 
-    try: _timezone = int(_timezone)
-    except: 
-      await ctx.channel.send(ctx.author.mention + " please enter a valid number", delete_after=10.0)
-      return
-    if _timezone < -12 or _timezone > 13:    
-      await ctx.channel.send(ctx.author.mention + " please enter a valid number", delete_after=10.0)
-      return
-  else: _timezone = 0
-
-  if _timezone < 0: _title = "BOSS CALENDAR (UTC " + str(_timezone) +")"
-  elif _timezone > 0: _title = "BOSS CALENDAR (UTC +" + str(_timezone) +")"
-  elif _timezone == 0: _title = "BOSS CALENDAR (UTC)"
-  
+  timez = str(ctx.message.content.lstrip("!calendar").strip())
+  if timez == "": timez = 0
+  try: timez = int(timez)
+  except: None
+  if type(timez) is int and- 12 < timez < 13:  
+    if timez < 0: title = f"(UTC {str(timez)})"
+    elif timez > 0: title = f" (UTC +{str(timez)})"
+    elif timez == 0: title = "(UTC)"
+  else: 
+    await ctx.channel.send(f"{ctx.author.mention} please enter a valid number", delete_after=10.0)
+    return 0
 
   await ctx.author.create_dm()
-  await ctx.author.dm_channel.send(embed=fnc.GetCalendarEmbed(_title,_timezone))
+  await ctx.author.dm_channel.send(embed=cmd.GetCalendarEmbed(f"BOSS CALENDAR {title}",timez))
   
-  if dm_check:      
-    await ctx.channel.send(ctx.author.mention + ' check your DM\'s!', delete_after=10.0)
+  if str(ctx.channel.type) != 'private':   
+    await ctx.message.delete()   
+    await ctx.channel.send(f'{ctx.author.mention} check your DM\'s!', delete_after=10.0)
 
 
 #BOT RUN
