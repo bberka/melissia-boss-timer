@@ -29,7 +29,8 @@ def GetTextChIDbyName(name):
 
 #returns the given boss name role id in order to tag
 def GetRoleIDbyName(rolename):
-  if rolename.lower() in var.boss_list :
+  for x in var.boss_list:
+    if rolename.lower() == x.name :
       for server in bot.guilds:
           for role in server.roles:
               if role.name.lower() == rolename.lower():
@@ -63,14 +64,15 @@ async def BossNotifyCheckLoop():
   if not temp: 
     print(f'No boss yet: {datetime.now(UTC).strftime("%m-%d %H:%M")}')
     return 0        
-  
+
   for x in temp:
     boss = x.split()[0]
     left = int(x.split()[1])
     for y in var.boss_list:
-      if boss == y.name: 
-        bosicon = y.icon
-        color = y.color
+      if boss.lower() == y.name: 
+        bossicon = y.icon
+        _color = y.color
+     
 
     title =  f"{boss.upper()} will spawn in {int(cmd.RoundTo60(left) / 60)} mins"      
     if -20 <  left < 360: 
@@ -80,8 +82,8 @@ async def BossNotifyCheckLoop():
     embedVar = discord.Embed(
       title=title, 
       description="", 
-      color=color
-      ).set_image(url=bosicon)
+      color=_color
+      ).set_image(url=bossicon)
     tag = f"<@&{str(GetRoleIDbyName(boss.lower()))}>"
 
     await channel.send(tag, embed=embedVar)    
