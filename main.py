@@ -64,7 +64,7 @@ async def BossNotifyCheckLoop():
   if not temp: 
     print(f'No boss yet: {datetime.now(UTC).strftime("%m-%d %H:%M")}')
     return 0        
-
+  await channel.purge(limit=len(temp))  
   for x in temp:
     boss = x.split()[0]
     left = int(x.split()[1])
@@ -72,13 +72,9 @@ async def BossNotifyCheckLoop():
       if boss.lower() == y.name: 
         bossicon = y.icon
         _color = y.color
-     
-
-    title =  f"{boss.upper()} will spawn in {int(cmd.RoundTo60(left) / 60)} mins"      
-    if -20 <  left < 360: 
-      await channel.purge(limit=len(temp))
-      if left < 20: title =  f"{boss.upper()} spawned"      
     
+    title =  f"{boss.upper()} will spawn in {int(cmd.RoundTo60(left) / 60)} mins"
+    if left < 20: title =  f"{boss.upper()} spawned"  
     embedVar = discord.Embed(
       title=title, 
       description="", 
@@ -87,7 +83,7 @@ async def BossNotifyCheckLoop():
     tag = f"<@&{str(GetRoleIDbyName(boss.lower()))}>"
 
     await channel.send(tag, embed=embedVar)    
-    print(f"Notification sent {boss} : {left}")
+    print(f"Notification sent {boss} : {left / 60} min")
   
     
     

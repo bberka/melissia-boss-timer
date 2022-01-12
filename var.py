@@ -37,7 +37,7 @@ timer_list = [
   Timer("Kutum", "20:30", 1),
   Timer("Nouver", "22:00", 1),
   Timer("RedNose", "07:00", 2),
-  Timer("Mudster", "07:00", 2),
+  Timer("Mudster", "07:00", 2), 
   Timer("Karanda", "11:00", 2),
   Timer("Nouver", "13:00", 2),
   Timer("Offin", "14:00", 2),
