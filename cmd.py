@@ -76,20 +76,10 @@ def GetDiscordText(value):
   #rounds the number given to 60 if it is higher than 30 else 0
   #converts the given boss and value left to spawn as seconds to view value as bot posts it to boss-info channel
   def _ConvertRow(boss, value):
-    rounded = int(RoundTo60(value))
-    r_hour = int(rounded / 3600)
-    r_min = int(rounded % 3600 / 60)
-    text = ""
-    if rounded >= 0:      
-      if r_hour == 0: 
-        if r_min == 0: text = f"{rounded} sec"   
-        else: text = f"{r_min} mins"
-      elif r_min == 0: text = f"{r_hour} hours"
-      else: text = f"{r_hour} hours and {r_min} mins"
-      
-      text = f"{boss.upper()} in {text}"
-    else: return False
-    return text
+    rounded = int(RoundTo60(value))   
+    r_min = int(rounded / 60)
+    if rounded < 0: return False
+    return f"{boss.upper()} in {r_min} mins"
 
 
   view_list = ""

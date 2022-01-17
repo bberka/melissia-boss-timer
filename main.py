@@ -8,6 +8,10 @@ from discord.ext import commands
 from discord.ext import tasks
 from dotenv import load_dotenv
 import cmd,var
+from bs4 import BeautifulSoup as bs
+import requests
+
+
 
 load_dotenv()
 
@@ -19,6 +23,7 @@ prefix = '!'
 
 UTC = pytz.utc
 utc = datetime.now(UTC)
+
 
 def GetTextChIDbyName(name):
   for server in bot.guilds:
@@ -38,6 +43,8 @@ def GetRoleIDbyName(rolename):
   return False
 
 
+
+
 ##########################################################
 ################# BOT LOOPS ##############################
 ##########################################################
@@ -47,24 +54,27 @@ def GetRoleIDbyName(rolename):
 async def BossInfoLoop():      
   info_channel = bot.get_channel(GetTextChIDbyName("boss-info"))
   await info_channel.purge(limit=5)
-  ctime = datetime.now(UTC).strftime("%Y-%m-%d %H:%M:%S")
+  ctime = datetime.now(UTC).strftime("%H:%M:%S")
   x = discord.Embed(
-    title=f"BOSS TIMES LIST | {ctime} UTC", 
+    title=f"BOSS LIST", 
     description=cmd.GetDiscordText(cmd.GetBossInfo(0)), 
     color=0xffffff)
+  x.set_footer(text=f"Last updated at {ctime} UTC")
+  #x.add_field(name=f"BOSS TIMES LIST | {ctime} UTC",value=cmd.GetDiscordText(cmd.GetBossInfo(0)))
+  #x.add_field(name=f"NIGHT TIME IN {nighttime}",value=f"")
   await info_channel.send(embed=x)
 
 
 #boss-notifications loop checks every min
 @tasks.loop(minutes=1)
 async def BossNotifyCheckLoop():  
-  channel = bot.get_channel(GetTextChIDbyName("boss-notifications"))
+  notification_channel = bot.get_channel(GetTextChIDbyName("boss-notifications"))
   temp = cmd.GetSpawn()
   
   if not temp: 
-    print(f'No boss yet: {datetime.now(UTC).strftime("%m-%d %H:%M")}')
-    return 0        
-  await channel.purge(limit=len(temp))  
+    print(f'no boss yet: {datetime.now(UTC).strftime("%m-%d %H:%M")}')
+    return     
+  #await notification_channel.purge(limit=len(temp))  
   for x in temp:
     boss = x.split()[0]
     left = int(x.split()[1])
@@ -82,22 +92,44 @@ async def BossNotifyCheckLoop():
       ).set_image(url=bossicon)
     tag = f"<@&{str(GetRoleIDbyName(boss.lower()))}>"
 
-    await channel.send(tag, embed=embedVar)    
-    print(f"Notification sent {boss} : {left / 60} min")
+    await notification_channel.send(tag, embed=embedVar)    
+    print(f"notification sent {boss} : {int(left / 60)} min")
   
-    
-    
+
+@tasks.loop(minutes=1)
+async def NightTimerLoop():
+  notification_channel = bot.get_channel(GetTextChIDbyName("boss-notifications"))
+  tag = "<@&932319798652706917>"
+  page = requests.get("https://mmotimer.com/bdo/?server=eu/")
+  soup = bs(page.content,features="html.parser")
+  night_time = soup.find_all(class_='countdown2')[0].text
+  daynight = str(soup.find_all(id='itsDayNightNow')[0]).split(">")[1].split("<")[0].split()[1].upper()
+  night_hours = int(night_time.split(":")[0]) 
+  night_minutes = int(night_time.split(":")[1])
+  night_seconds = int(night_time.split(":")[2])
+  night_as_seconds = (night_hours * 3600) + (night_minutes * 60) + night_seconds
+  if 15 < night_as_seconds < 11985: return
+  if daynight == "DAY": tag = ""
+  embedVar = discord.Embed(
+    title=f"NOW IT'S {daynight} TIME IN THE GAME!", 
+    description="", 
+    color=0x092425
+    )
+  await notification_channel.send(tag, embed=embedVar)
+  print(f"{daynight} time notification sent.")
 
 #starts info and notify loop at exact 00 seconds
 @tasks.loop(seconds=1)
 async def BossTimerExact():  
   sec = int(datetime.now(UTC).strftime("%S"))
-  if sec == 00:
-    print("Info Loop Started!")
-    BossInfoLoop.start()
-    print("Notify v4 Loop Started!")
-    BossNotifyCheckLoop.start()
-    BossTimerExact.stop()
+  if sec != 00: return
+  print("INFO LOOP STARTED!")
+  BossInfoLoop.start()
+  print("NOTIFICATION LOOP STARTED!")
+  BossNotifyCheckLoop.start()
+  print("DAYNIGHT TIME LOOP STARTED!")
+  NightTimerLoop.start()
+  BossTimerExact.stop()
 
 #changes boss status every 10 mins
 @tasks.loop(minutes=10)
