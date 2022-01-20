@@ -126,11 +126,10 @@ def GetCalendarEmbed(_title,_timezone):
   
 #returns the time and day given as seconds 
 #day number multiplied with day_sec and it converts current time to seconds and returns it
-def GetGivenTimeAsSecond(day, time):
+def GetGivenTimeAsSecond(day, _time):
   # 0 -> Monday | ... |6 -> Sunday
-  h = int(time.split(":")[0])
-  m = int(time.split(":")[1])
-  result = (h * 3600) + (m * 60) + (day * day_sec)
+  (hours, minutes) = map(int, _time.split(":"))
+  result = (hours * 3600) + (minutes * 60) + (day * day_sec)
   return result
 
 #checks 0 , 5 , 15 minute bosses
@@ -140,8 +139,8 @@ def GetSpawn():
     temp = []
     val_sec = (value * 60)
     for x in GetBossInfo(0):
-        left = int(x.split()[1])
-        if val_sec - 15 < left < val_sec + 15: temp.append(x)
+      left = int(x.split()[1])
+      if val_sec - 15 < left < val_sec + 15: temp.append(x)
     return temp
 
   checklist = [0,5,15]

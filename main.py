@@ -1,6 +1,6 @@
 from keep_alive import keep_alive
 from datetime import datetime
-import pytz
+import pytz,time
 import discord
 import os
 import random
@@ -60,8 +60,6 @@ async def BossInfoLoop():
     description=cmd.GetDiscordText(cmd.GetBossInfo(0)), 
     color=0xffffff)
   x.set_footer(text=f"Last updated at {ctime} UTC")
-  #x.add_field(name=f"BOSS TIMES LIST | {ctime} UTC",value=cmd.GetDiscordText(cmd.GetBossInfo(0)))
-  #x.add_field(name=f"NIGHT TIME IN {nighttime}",value=f"")
   await info_channel.send(embed=x)
 
 
@@ -95,39 +93,33 @@ async def BossNotifyCheckLoop():
     await notification_channel.send(tag, embed=embedVar)    
     print(f"notification sent {boss} : {int(left / 60)} min")
   
-
 @tasks.loop(minutes=1)
 async def NightTimerLoop():
   notification_channel = bot.get_channel(GetTextChIDbyName("boss-notifications"))
+  test_channel = bot.get_channel(GetTextChIDbyName("test"))
   tag = "<@&932319798652706917>"
-  page = requests.get("https://mmotimer.com/bdo/?server=eu/")
-  soup = bs(page.content,features="html.parser")
-  night_time = soup.find_all(class_='countdown2')[0].text
-  daynight = str(soup.find_all(id='itsDayNightNow')[0]).split(">")[1].split("<")[0].split()[1].upper()
-  night_hours = int(night_time.split(":")[0]) 
-  night_minutes = int(night_time.split(":")[1])
-  night_seconds = int(night_time.split(":")[2])
-  night_as_seconds = (night_hours * 3600) + (night_minutes * 60) + night_seconds
-  if 15 < night_as_seconds < 11985: return
-  if daynight == "DAY": tag = ""
-  embedVar = discord.Embed(
-    title=f"NOW IT'S {daynight} TIME IN THE GAME!", 
-    description="", 
-    color=0x092425
-    )
-  await notification_channel.send(tag, embed=embedVar)
-  print(f"{daynight} time notification sent.")
-
+  for item in var.night_time_list:    
+    check = datetime.now(UTC).strftime("%H:%M") == item
+    if check:
+      embedVar = discord.Embed(
+      title=f"NOW IT'S NIGHT TIME IN THE GAME!", 
+      description="", 
+      color=0x092425
+      )
+      await notification_channel.send(tag, embed=embedVar)
+      await test_channel.send(f'{datetime.now(UTC).strftime("%H:%M")} | {item}')
+      print(f"night time notification sent.")
+   
 #starts info and notify loop at exact 00 seconds
 @tasks.loop(seconds=1)
 async def BossTimerExact():  
-  sec = int(datetime.now(UTC).strftime("%S"))
-  if sec != 00: return
+  sec = datetime.now(UTC).strftime("%S")
+  if sec != "01": return
   print("INFO LOOP STARTED!")
   BossInfoLoop.start()
   print("NOTIFICATION LOOP STARTED!")
   BossNotifyCheckLoop.start()
-  print("DAYNIGHT TIME LOOP STARTED!")
+  print("NIGHT TIME LOOP STARTED!")
   NightTimerLoop.start()
   BossTimerExact.stop()
 

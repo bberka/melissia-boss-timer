@@ -14,6 +14,15 @@ class Boss:
     self.icon = icon
     self.color = color
 
+night_time_list = [  
+  "03:40"
+  "07:40",
+  "11:40",
+  "15:40",
+  "19:40",
+  "23:40",
+]
+
 timer_list = [
   Timer("RedNose", "07:00", 0),
   Timer("Mudster", "07:00", 0),
