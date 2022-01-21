@@ -15,7 +15,7 @@ class Boss:
     self.color = color
 
 night_time_list = [  
-  "03:40"
+  "03:40",
   "07:40",
   "11:40",
   "15:40",

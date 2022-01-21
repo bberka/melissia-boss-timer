@@ -1,6 +1,6 @@
 from keep_alive import keep_alive
 from datetime import datetime
-import pytz,time
+import pytz
 import discord
 import os
 import random
@@ -8,8 +8,7 @@ from discord.ext import commands
 from discord.ext import tasks
 from dotenv import load_dotenv
 import cmd,var
-from bs4 import BeautifulSoup as bs
-import requests
+
 
 
 
@@ -95,8 +94,7 @@ async def BossNotifyCheckLoop():
   
 @tasks.loop(minutes=1)
 async def NightTimerLoop():
-  notification_channel = bot.get_channel(GetTextChIDbyName("boss-notifications"))
-  test_channel = bot.get_channel(GetTextChIDbyName("test"))
+  notification_channel = bot.get_channel(GetTextChIDbyName("boss-notifications"))  
   tag = "<@&932319798652706917>"
   for item in var.night_time_list:    
     check = datetime.now(UTC).strftime("%H:%M") == item
@@ -106,8 +104,7 @@ async def NightTimerLoop():
       description="", 
       color=0x092425
       )
-      await notification_channel.send(tag, embed=embedVar)
-      await test_channel.send(f'{datetime.now(UTC).strftime("%H:%M")} | {item}')
+      await notification_channel.send(tag, embed=embedVar)      
       print(f"night time notification sent.")
    
 #starts info and notify loop at exact 00 seconds
