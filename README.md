@@ -1,3 +1,4 @@
+# This project is no longer continued
 # melissia-boss-timer
 Private Discord bot made by Python for boss notifications in Melissia Games Black Desert Server. Change-log can be found in discord
 
